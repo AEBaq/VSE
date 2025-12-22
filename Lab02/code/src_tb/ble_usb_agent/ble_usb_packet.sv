@@ -33,14 +33,13 @@ Ver   Date        Person     Comments
 
 class ble_usb_packet;
 
-    bit[7:0]    size;
-    bit[7:0]    rssi;
-    bit[6:0]    channel;
-    bit         adv;
-    bit[7:0]  reserved; // Pas utilisé mais mis pour aligner les données
-    bit[31:0]   addr;
-    bit[15:0]   header;
-    bit[7:0]    data[];
+    byte    size;
+    byte    rssi;
+    byte    channel_adv = {channel[7:1], adv};
+    byte    reserved; // Pas utilisé mais mis pour aligner les données
+    byte    addr[4];
+    byte    header[2];
+    byte    data[];
 
     // Fonction
 
@@ -81,6 +80,11 @@ class ble_usb_packet;
     function bit is_valid(); // Vérifie que la taille du paquet est correcte, écrite en avance si nécessaire dans la suite du laboratoire
         return (size == (data.size() + 10));
     endfunction : is_valid
+
+    function void set_size_from_values();
+        size = 10 + data.size(); // 10 octets d'en-tête + taille des données
+    endfunction : set_size_from_values
+    
 
 endclass : ble_usb_packet
 
