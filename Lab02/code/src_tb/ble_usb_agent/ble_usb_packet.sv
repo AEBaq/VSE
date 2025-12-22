@@ -33,6 +33,55 @@ Ver   Date        Person     Comments
 
 class ble_usb_packet;
 
+    bit[7:0]    size;
+    bit[7:0]    rssi;
+    bit[6:0]    channel;
+    bit         adv;
+    bit[7:0]  reserved; // Pas utilisé mais mis pour aligner les données
+    bit[31:0]   addr;
+    bit[15:0]   header;
+    bit[7:0]    data[];
+
+    // Fonction
+
+    function string psprint();
+        $sformat(psprint, "USB Packet, isAdv : %b, addr= %h, channel = %d, rssi = %d\nsize = %d, dataLength= %d\n",
+                                                        this.adv, this.addr, this.channel, this.rssi, this.size,this.data.size());
+    endfunction : psprint
+
+    // Conversion en paquet USB, queue est la FIFO d'octets reçues
+    function void from_bytes(const ref byte unsigned queue[$]); // pas sûre à 100% de const ref, mais ça me semblait le plus approrpié
+
+        if (queue.size() < 10) begin
+            `LOG_ERROR(svlogger::getInstance(), "USB packet too small to be valid, size received =%d\n", queue.size());
+            return;
+        end
+
+        // Dans l'ordre de reception des octets :
+        size = queue[0];
+
+        // Check que la taille du paquet correspond à la taille indiquée avant de continuer
+        if (size != queue.size()) begin
+            `LOG_WARNING(svlogger::getInstance(), "USB size value %d is different from the received queue size %d\n", size, queue.size());
+        end
+
+        rssi = queue[1];
+        channel = queue[2][7:1];
+        adv = queue[2][0];
+        reserved = queue[3];
+        addr = {queue[7], queue[6], queue[5], queue[4]};
+        header = {queue[9], queue[8]};
+        data = new[queue.size() - 10]; // On enlève les 10 premiers octets qui ne concernent pas les données
+        for (int i = 10; i < queue.size(); i++) begin
+            data[i - 10] = queue[i];
+        end
+
+    endfunction : from_bytes
+
+    function bit is_valid(); // Vérifie que la taille du paquet est correcte, écrite en avance si nécessaire dans la suite du laboratoire
+        return (size == (data.size() + 10));
+    endfunction : is_valid
+
 endclass : ble_usb_packet
 
 
