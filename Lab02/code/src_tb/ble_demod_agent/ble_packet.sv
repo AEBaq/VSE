@@ -50,6 +50,7 @@ class ble_packet;
     // deviceAddr
     rand logic[31:0] deviceAddr;
 
+
     // Not sure this is totally right...
     constraint size_range {
       //size inside {[6:10]};
@@ -88,6 +89,7 @@ class ble_packet;
             // On pourrait également ajouter une contrainte pour addr afin d'enlever cette ligne, afin de pas randomizer inutilement
             addr = 32'h12345678; 
             header[3:0] = size[3:0];
+            sizeToSend = header[3:0] * 8 + 16 + 32 + 8; // Header[3:0] contient la taille des données pour les paquets d'advertizing
             // DeviceAddr = 0. Pour l'exemple
             // Ici, on a randomizé deviceAddr uniquement lorsqu'on envoie un paquet d'advertizing
             for(int i = 0; i < 32; i++)
@@ -100,6 +102,7 @@ class ble_packet;
             // TODO : Il faudrait récupérer une adresse définie dans un paquet d'advertizing déjà envoyé
             addr = 0;
             header[5:0] = size[5:0];
+            sizeToSend = header[5:0] * 8 + 16 + 32 + 8;
         end
 
 
@@ -123,7 +126,7 @@ class ble_packet;
             dataToSend[sizeToSend-8-32-16+i]=size[i];
 
         // Données
-        for(int i = 0; i < size * 8; i++)
+        for(int i = 0; i < size * 8; i++) 
             dataToSend[sizeToSend-8-32-16-1-i]=rawData[size*8-1-i];
 
         if (isAdv) begin
