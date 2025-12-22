@@ -64,6 +64,33 @@ class ble_demod_driver;
         objections_pkg::objection::get_inst().drop();
     endtask
 
+    task send_packet(ble_packet packet);
+        objections_pkg::objection::get_inst().raise();
+
+        packet.randomize();
+
+        vif.valid_i <= 1;
+        for (int i = 0; i < packet.sizeToSend(); i++) begin
+            vif.serial_i <= packet.dataToSend[i];
+            vif.channel_i <= packet.channel;
+            vif.rssi_i <= packet.rssi;
+            @(posedge vif.clk_i);
+        end
+
+        // Send the packet to the scoreboard
+        driver_to_scoreboard_fifo.put(packet);
+
+        // Reset inputs
+        vif.serial_i <= 0;
+        vif.valid_i <= 0;
+        vif.channel_i <= 0;
+        vif.rssi_i <= 0;
+        for (int i = 0; i < 9; i++)
+            @(posedge vif.clk_i);
+            
+        objections_pkg::objection::get_inst().drop();
+    endtask
+
     task run;
         automatic ble_packet packet;
         packet = new;
