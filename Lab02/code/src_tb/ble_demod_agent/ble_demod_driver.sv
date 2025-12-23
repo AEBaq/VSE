@@ -40,6 +40,32 @@ class ble_demod_driver;
 
     virtual ble_demod_itf vif;
 
+    int current_channel = 0; // garder la trace du canal courant (0 à 80)
+
+    task move_one_cycle();
+        vif.serial_i <= 1;
+        vif.valid_i <= 1;
+        vif.channel_i <= current_channel;
+        vif.rssi_i <= 0;
+        @(posedge vif.clk_i);
+        current_channel = (current_channel + 1) % 81; // Loop de 0 a 80
+    endtask
+
+    task send_one_bit(logic val, int target_channel, logic[7:0] rssi);
+        while (current_channel != target_channel) begin
+            move_one_cycle();
+        end
+
+        // Now on the target channel
+        vif.serial_i <= val;
+        vif.valid_i <= 1;
+        vif.channel_i <= target_channel;
+        vif.rssi_i <= rssi;
+        @(posedge vif.clk_i);
+        current_channel = (current_channel + 1) % 81; // Loop de 0 a 80
+    endtask
+
+    // Garder comme modèle
     task drive_packet(ble_packet packet);
         objections_pkg::objection::get_inst().raise();
 //        packet.isAdv = 1;
@@ -67,14 +93,8 @@ class ble_demod_driver;
     task send_packet(ble_packet packet);
         objections_pkg::objection::get_inst().raise();
 
-        packet.randomize();
-
-        vif.valid_i <= 1;
-        for (int i = 0; i < packet.sizeToSend(); i++) begin
-            vif.serial_i <= packet.dataToSend[i];
-            vif.channel_i <= packet.channel;
-            vif.rssi_i <= packet.rssi;
-            @(posedge vif.clk_i);
+        for (int i = packet.sizeToSend - 1; i >= 0; i--) begin
+            send_one_bit(packet.dataToSend[i], packet.channel, packet.rssi);
         end
 
         // Send the packet to the scoreboard
@@ -85,9 +105,9 @@ class ble_demod_driver;
         vif.valid_i <= 0;
         vif.channel_i <= 0;
         vif.rssi_i <= 0;
-        for (int i = 0; i < 9; i++)
+        for(int i = 0; i < 9; i++)
             @(posedge vif.clk_i);
-            
+
         objections_pkg::objection::get_inst().drop();
     endtask
 
@@ -96,7 +116,9 @@ class ble_demod_driver;
         packet = new;
         `LOG_INFO(svlogger::getInstance(), "Driver : start");
 
-        vif.serial_i <= 0;
+        current_channel = 0;
+
+        vif.serial_i <= 1; // Par défaut à 1 ? Pas sûre d'avoir compris cette partie du pdf
         vif.valid_i <= 0;
         vif.channel_i <= 0;
         vif.rssi_i <= 0;
@@ -108,13 +130,14 @@ class ble_demod_driver;
 
         // Cette fonction mérite d'être mieux écrite
 
-        for(int i=0;i<10;i++) begin
+        for(int i = 0; i < 10; i++) begin
             sequencer_to_driver_fifo.get(packet);
-            drive_packet(packet);
-            `LOG_INFO(svlogger::getInstance(), "I got a packet!!!!");
+            // drive_packet(packet);
+            send_packet(packet);
+            `LOG_INFO(svlogger::getInstance(), "I got a packet !");
         end
 
-        for(int i=0;i<99;i++)
+        for(int i = 0; i < 99; i++)
             @(posedge vif.clk_i);
 
         `LOG_INFO(svlogger::getInstance(), "Driver : end");
