@@ -52,6 +52,39 @@ class ble_usb_monitor;
             monitor_to_scoreboard_fifo.put(usb_packet);
         end
 */
+        byte unsigned received_bytes[$]; // FIFO d'octets reçus
+        forever begin
+            // Wait pour clk
+            @(posedge vif.clk_i);
+
+            // Detecte le début d'un paquet
+            if (vif.frame_o) begin
+                received_bytes = {}; // Clear la FIFO
+                
+                // Récupération des octets tant que frame_o est à 1
+                while (vif.frame_o) begin
+                    if (vif.valid_i) begin
+                        received_bytes.push_back(vif.data_o);
+                    end
+                    @(posedge vif.clk_i);
+                end
+
+                // On a fini avec la frame, on peut construire le paquet USB
+                if (received_bytes.size() >= 10) begin // Taille minimale d'un paquet USB = 10 octets
+                    usb_packet = new;
+                    usb_packet.from_bytes(received_bytes);
+
+                    `LOG_INFO2(svlogger::getInstance(), "Monitor : USB packet received %s", usb_packet.psprint());
+
+                    // Send au scoreboard
+                    monitor_to_scoreboard_fifo.put(usb_packet);
+                end
+                else begin
+                    `LOG_WARNING2(svlogger::getInstance(), "Monitor : Received USB packet too small to be valid, size = %d", received_bytes.size());
+                end
+            end
+        end // forever
+
 
     `LOG_INFO(svlogger::getInstance(), "Monitor : end");
     endtask : run
