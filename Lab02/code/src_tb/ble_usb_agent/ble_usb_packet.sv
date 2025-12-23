@@ -33,26 +33,28 @@ Ver   Date        Person     Comments
 
 class ble_usb_packet;
 
-    byte    size;
-    byte    rssi;
-    byte    channel_adv = {channel[7:1], adv};
-    byte    reserved; // Pas utilisé mais mis pour aligner les données
-    byte    addr[4];
-    byte    header[2];
-    byte    data[];
+    byte size;
+    byte rssi;
+    bit[6:0] channel;
+    bit isAdv;
+    byte reserved; // Pas utilisé mais mis pour aligner les données
+    byte addr[4];
+    byte header[2];
+    byte data[];
+
 
     // Fonction
 
     function string psprint();
         $sformat(psprint, "USB Packet, isAdv : %b, addr= %h, channel = %d, rssi = %d\nsize = %d, dataLength= %d\n",
-                                                        this.adv, this.addr, this.channel, this.rssi, this.size,this.data.size());
+                                                        this.isAdv, this.addr, this.channel, this.rssi, this.size,this.data.size());
     endfunction : psprint
 
     // Conversion en paquet USB, queue est la FIFO d'octets reçues
     function void from_bytes(const ref byte unsigned queue[$]); // pas sûre à 100% de const ref, mais ça me semblait le plus approrpié
 
         if (queue.size() < 10) begin
-            `LOG_ERROR(svlogger::getInstance(), "USB packet too small to be valid, size received =%d\n", queue.size());
+            `LOG_ERROR2(svlogger::getInstance(), "USB packet too small to be valid, size received =%d\n", queue.size());
             return;
         end
 
@@ -61,15 +63,19 @@ class ble_usb_packet;
 
         // Check que la taille du paquet correspond à la taille indiquée avant de continuer
         if (size != queue.size()) begin
-            `LOG_WARNING(svlogger::getInstance(), "USB size value %d is different from the received queue size %d\n", size, queue.size());
+            `LOG_WARNING3(svlogger::getInstance(), "USB size value %d is different from the received queue size %d\n", size, queue.size());
         end
 
         rssi = queue[1];
         channel = queue[2][7:1];
-        adv = queue[2][0];
+        isAdv = queue[2][0];
         reserved = queue[3];
-        addr = {queue[7], queue[6], queue[5], queue[4]};
-        header = {queue[9], queue[8]};
+        addr [0] = queue[4];
+        addr [1] = queue[5];
+        addr [2] = queue[6];
+        addr [3] = queue[7];
+        header[0] = queue[8];
+        header[1] = queue[9];
         data = new[queue.size() - 10]; // On enlève les 10 premiers octets qui ne concernent pas les données
         for (int i = 10; i < queue.size(); i++) begin
             data[i - 10] = queue[i];
@@ -84,7 +90,27 @@ class ble_usb_packet;
     function void set_size_from_values();
         size = 10 + data.size(); // 10 octets d'en-tête + taille des données
     endfunction : set_size_from_values
-    
+
+    function void build_from_ble_packet(ble_packet pkt);
+        this.rssi = pkt.rssi;
+
+        this.isAdv = pkt.isAdv;
+        this.channel = pkt.channel;
+
+        this.addr[0] = pkt.addr[7:0];
+        this.addr[1] = pkt.addr[15:8];
+        this.addr[2] = pkt.addr[23:16];
+        this.addr[3] = pkt.addr[31:24];
+
+        this.header[0] = pkt.header[7:0];
+        this.header[1] = pkt.header[15:8];
+
+        this.data = new[pkt.size];
+        for (int i = 0; i < pkt.size; i++) begin
+            this.data[i] = pkt.rawData[i * 8 +: 8];
+        end
+        this.set_size_from_values();
+    endfunction : build_from_ble_packet
 
 endclass : ble_usb_packet
 
