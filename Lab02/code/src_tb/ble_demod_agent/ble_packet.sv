@@ -38,7 +38,7 @@ class ble_packet;
 
     logic isAdv;
     logic dataValid = 1;
-    rand logic[31:0] addr;
+    logic[31:0] addr;
     rand logic[15:0] header;
     rand logic[(64*8):0] rawData;
     rand logic[5:0] size; // dataLength
@@ -66,9 +66,10 @@ class ble_packet;
             channel inside {0, 24, 78}; // Advertising channels
         } else {
             channel inside {[1:23], [25:77]}; // Data channels
-            channel[0] = 0; // even channel
+            channel[0] == 0; // even channel
         }
     }
+
 
     function string psprint();
         $sformat(psprint, "BlePacket, isAdv : %b, addr= %h, time = %t\nsizeSend = %d, dataSend = %h\n",
@@ -81,28 +82,29 @@ class ble_packet;
 
         // Initialisation des données à envoyer
         dataToSend = 0;
-        sizeToSend=size*8+16+32+8;
+        sizeToSend = size * 8 + 16 + 32 + 8;
 
         header = 16'h0000; // Initialisation de l'en-tête à 0 pour les bits non utilisés
+
         // Cas de l'envoi d'un paquet d'advertizing
         if (isAdv == 1) begin
             // On pourrait également ajouter une contrainte pour addr afin d'enlever cette ligne, afin de pas randomizer inutilement
             addr = 32'h12345678; 
             header[3:0] = size[3:0];
-            sizeToSend = header[3:0] * 8 + 16 + 32 + 8; // Header[3:0] contient la taille des données pour les paquets d'advertizing
+            sizeToSend = size[3:0] * 8 + 16 + 32 + 8; // Header[3:0] contient la taille des données pour les paquets d'advertizing
             // DeviceAddr = 0. Pour l'exemple
             // Ici, on a randomizé deviceAddr uniquement lorsqu'on envoie un paquet d'advertizing
             for(int i = 0; i < 32; i++)
-                rawData[size*8-1-i] = deviceAddr[i];
+                rawData[size[3:0] * 8 + i] = deviceAddr[i];
         end
 
         // Cas de l'envoi d'un paquet de données
         else if (isAdv == 0) begin
             // Peut-être que l'adresse devra être définie d'une certaine manière.
-            // TODO : Il faudrait récupérer une adresse définie dans un paquet d'advertizing déjà envoyé
-            addr = 0;
+            // Il faudrait récupérer une adresse définie dans un paquet d'advertizing déjà envoyé
+            //addr = 0;
             header[5:0] = size[5:0];
-            sizeToSend = header[5:0] * 8 + 16 + 32 + 8;
+            sizeToSend = size[5:0] * 8 + 16 + 32 + 8;
         end
 
 
