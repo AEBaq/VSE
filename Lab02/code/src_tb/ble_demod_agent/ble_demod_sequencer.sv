@@ -301,7 +301,7 @@ class ble_demod_sequencer;
         // Utiliser une adresse "inventée"
         packet = new;
         packet.isAdv = 0;
-        packet.addr = 32'hDEADBEEF;  // Adresse invalide
+        packet.addr = 32'hCAFEBABE;  // Adresse invalide
         void'(packet. randomize());
         sequencer_to_driver_fifo.put(packet);
         `LOG_INFO2(svlogger::getInstance(), "Testcase9: Data with invalid addr %h", packet.addr);
