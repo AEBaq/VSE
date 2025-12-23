@@ -28,6 +28,7 @@
 `define LOG_INFO2(logger, a, b) begin string s; $sformat(s, a, b);logger.info(s); end
 `define LOG_INFO3(logger, a, b, c) begin string s; $sformat(s, a, b, c);logger.info(s); end
 `define LOG_INFO4(logger, a, b, c, d) begin string s; $sformat(s, a, b, c, d);logger.info(s); end
+`define LOG_INFO5(logger, a, b, c, d, e) begin string s; $sformat(s, a, b, c, d, e);logger.info(s); end
 
 `define LOG_WARNING(logger, a) logger.warning(a)
 `define LOG_WARNING2(logger, a, b) begin string s; $sformat(s, a, b);logger.warning(s); end
