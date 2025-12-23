@@ -87,8 +87,8 @@ module packet_analyzer_tb#(int TESTCASE = 0, int ERRNO = 0);
 
         // Building the entire environment
         env = new;
-        //env.input_itf = input_itf;
-        //env.output_itf = output_itf;
+        env.input_itf = input_itf;
+        env.output_itf = output_itf;
         env.testcase = TESTCASE;
         env.build();
         env.connect();
