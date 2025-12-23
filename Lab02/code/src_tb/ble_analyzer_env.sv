@@ -100,6 +100,9 @@ class ble_analyzer_env;
             end
         join_any;
 
+        `LOG_INFO(svlogger::getInstance(), "Environment : End of run task");
+        `LOG_INFO3(svlogger::getInstance(), "Packet valide : %d\nPacket invalide : %d\n", scoreboard.packet_matched, scoreboard.packet_error);
+
     endtask : run
 
 endclass : ble_analyzer_env
