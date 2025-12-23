@@ -1,0 +1,83 @@
+<?xml version="1.0" ?>
+<rmdb version="1.0" toprunnables="directed">
+  <!-- ============== -->
+  <!-- DIRECTED TESTS -->
+  <!-- ============== -->
+  <runnable name="directed" type="group">
+    <parameters>
+        <parameter name="ucdbfile">../(%INSTANCE%).ucdb</parameter>
+    </parameters>
+    <members>
+      <member>dirtest_0_0</member>
+      <member>dirtest_1_0</member>
+      <member>dirtest_2_0</member>
+      <member>dirtest_3_0</member>
+      <member>dirtest_4_0</member>
+      <member>dirtest_5_0</member>
+      <member>dirtest_6_0</member>
+    </members>
+
+    <execScript>
+      <command>file delete -force work</command>
+      <command>set Path_DUV     "(%RMDBDIR%)/src_vhd"</command>
+      <command>set Path_TB       "(%RMDBDIR%)/src_tb"</command>
+      <command>global Path_DUV</command>
+      <command>global Path_TB</command>
+      <command>vlib work</command>
+      <command>vcom -2008 -mixedsvvh $Path_DUV/ble_packet_analyzer.vhd</command>
+      <command>vlog -sv -mixedsvvh $Path_TB/ble_packet_analyzer_tb.sv</command>
+      <command>vsim -t 10ps -GERRNO=(%errno%) -GTESTCASE=(%testcase%) work.packet_analyzer_tb</command>
+      <command>set StdArithNoWarnings 1</command>
+      <command>set NumericStdNoWarnings 1</command>
+      <command>run 2 ns</command>
+      <command>set StdArithNoWarnings 0</command>
+      <command>set NumericStdNoWarnings 0</command>
+      <command>run -all</command>
+      <command>coverage attribute -name ERRNO -value (%INSTANCE%)</command>
+      <command>coverage save (%ucdbfile%)</command>
+    </execScript>
+  </runnable>
+  <runnable name="dirtest_0_0" type="task">
+    <parameters>
+      <parameter name="testcase">0</parameter>
+      <parameter name="errno">0</parameter>
+    </parameters>
+  </runnable>
+  <runnable name="dirtest_1_0" type="task">
+    <parameters>
+      <parameter name="testcase">0</parameter>
+      <parameter name="errno">1</parameter>
+    </parameters>
+  </runnable>
+  <runnable name="dirtest_2_0" type="task">
+    <parameters>
+      <parameter name="testcase">0</parameter>
+      <parameter name="errno">2</parameter>
+    </parameters>
+  </runnable>
+  <runnable name="dirtest_3_0" type="task">
+    <parameters>
+      <parameter name="testcase">0</parameter>
+      <parameter name="errno">3</parameter>
+    </parameters>
+  </runnable>
+  <runnable name="dirtest_4_0" type="task">
+    <parameters>
+      <parameter name="testcase">0</parameter>
+      <parameter name="errno">4</parameter>
+    </parameters>
+  </runnable>
+  <runnable name="dirtest_5_0" type="task">
+    <parameters>
+      <parameter name="testcase">0</parameter>
+      <parameter name="errno">5</parameter>
+    </parameters>
+  </runnable>
+  <runnable name="dirtest_6_0" type="task">
+    <parameters>
+      <parameter name="testcase">0</parameter>
+      <parameter name="errno">6</parameter>
+    </parameters>
+  </runnable>
+
+</rmdb>
